@@ -1,5 +1,5 @@
 node_modules/
-server/botanica.db
+server/botanica.db*
 server/uploads/
 server/.env
 .env
