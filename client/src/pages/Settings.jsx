@@ -143,36 +143,35 @@ export default function Settings() {
         {isVercel ? (
           <div className="bg-forest-50 border border-forest-100 rounded-xl p-4 text-sm font-sans text-bark/70 space-y-1">
             <p className="font-semibold text-forest">Running on Vercel</p>
-            <p>To set your API key: go to your <strong>Vercel dashboard → Project → Settings → Environment Variables</strong> and add <code className="bg-white px-1 rounded">ANTHROPIC_API_KEY</code>. Then redeploy.</p>
+            <p>Go to your <strong>Vercel dashboard → Project → Settings → Environment Variables</strong>, add <code className="bg-white px-1 rounded">ANTHROPIC_API_KEY</code>, then redeploy.</p>
           </div>
         ) : (
-          <div>
-            <label className="label">
-              {apiKeyConfigured ? 'Replace API key' : 'Enter your Anthropic API key'}
-            </label>
-            <div className="relative">
-              <input
-                type={showApiKey ? 'text' : 'password'}
-              className="input pr-11 font-mono text-sm"
-              placeholder="sk-ant-api03-..."
-              value={apiKey}
-              onChange={e => setApiKey(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && saveApiKey()}
-            />
-            <button
-              type="button"
-              onClick={() => setShowApiKey(v => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-bark/40 hover:text-bark/70 transition-colors"
-            >
-              {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-          <p className="text-xs text-bark/40 mt-1.5">
-            Get your key at <span className="font-medium">console.anthropic.com</span> → API Keys.
-            It's saved to your local server config — never sent anywhere else.
-          </p>
-        </div>
-
+          <div className="space-y-3">
+            <div>
+              <label className="label">
+                {apiKeyConfigured ? 'Replace API key' : 'Enter your Anthropic API key'}
+              </label>
+              <div className="relative">
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  className="input pr-11 font-mono text-sm"
+                  placeholder="sk-ant-api03-..."
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveApiKey()}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bark/40 hover:text-bark/70 transition-colors"
+                >
+                  {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <p className="text-xs text-bark/40 mt-1.5">
+                Get your key at <span className="font-medium">console.anthropic.com</span> → API Keys.
+              </p>
+            </div>
             <button onClick={saveApiKey} disabled={savingKey || !apiKey.trim()} className="btn-primary flex items-center gap-2 py-2.5">
               <Key size={15} />
               {savingKey ? 'Saving…' : apiKeyConfigured ? 'Update key' : 'Save key & enable AI'}
