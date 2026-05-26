@@ -1,0 +1,15 @@
+node_modules/
+server/botanica.db
+server/uploads/
+server/.env
+.env
+.env.local
+client/dist/
+tunnel.log
+tunnel.js
+cloudflared.exe
+start.ps1
+restart.cmd
+server/server.log
+*.log
+.DS_Store

@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-cream text-bark;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-sage-200 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-sage-300;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-forest text-white rounded-xl px-5 py-2.5 font-sans font-medium text-sm
+           hover:bg-forest-600 active:bg-forest-700 transition-colors duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply border border-forest text-forest rounded-xl px-5 py-2.5 font-sans font-medium text-sm
+           hover:bg-forest-50 active:bg-forest-100 transition-colors duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-terra {
+    @apply bg-terra text-white rounded-xl px-5 py-2.5 font-sans font-medium text-sm
+           hover:bg-terra-600 active:bg-terra-700 transition-colors duration-150
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply text-bark/70 rounded-xl px-4 py-2.5 font-sans font-medium text-sm
+           hover:bg-bark/5 active:bg-bark/10 transition-colors duration-150;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-soft border border-stone-100 p-6;
+  }
+
+  .input {
+    @apply w-full border border-stone-200 rounded-xl px-4 py-3 text-bark text-sm
+           placeholder-bark/40 font-sans bg-white
+           focus:outline-none focus:ring-2 focus:ring-forest/20 focus:border-forest
+           transition-colors duration-150;
+  }
+
+  .label {
+    @apply block text-sm font-medium font-sans text-bark/70 mb-1.5;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 text-xs font-medium font-sans px-2.5 py-1 rounded-full;
+  }
+
+  .page-title {
+    @apply font-serif text-3xl font-semibold text-bark tracking-tight;
+  }
+
+  .section-title {
+    @apply font-serif text-xl font-semibold text-bark;
+  }
+
+  .tab-btn {
+    @apply px-4 py-2 text-sm font-medium font-sans rounded-lg transition-colors duration-150;
+  }
+
+  .tab-btn.active {
+    @apply bg-forest text-white;
+  }
+
+  .tab-btn:not(.active) {
+    @apply text-bark/60 hover:text-bark hover:bg-bark/5;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}

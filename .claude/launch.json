@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "botanica-frontend",
+      "runtimeExecutable": "C:\\Users\\F_Bell\\botanica\\client\\start-dev.cmd",
+      "runtimeArgs": [],
+      "cwd": "C:\\Users\\F_Bell\\botanica\\client",
+      "port": 5173
+    }
+  ]
+}
