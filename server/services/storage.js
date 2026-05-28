@@ -29,9 +29,14 @@ async function uploadFile(buffer, originalname, mimetype) {
     console.log('[storage] Uploaded to Cloudinary:', data.secure_url);
     return data.secure_url;
 
+  } else if (process.env.VERCEL) {
+    // On Vercel without cloud storage configured — store as base64 data URL
+    // (temporary fallback until CLOUDINARY_CLOUD_NAME + CLOUDINARY_UPLOAD_PRESET are set)
+    console.log('[storage] No cloud storage configured on Vercel — using base64 data URL fallback');
+    return `data:${mimetype};base64,${buffer.toString('base64')}`;
   } else {
-    // Local disk fallback for development
-    console.log('[storage] No cloud storage configured — saving to local disk');
+    // Local disk for development
+    console.log('[storage] Saving to local disk');
     const dir = path.join(__dirname, '..', 'uploads');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     const filename = `${uuidv4()}${path.extname(originalname) || '.jpg'}`;
