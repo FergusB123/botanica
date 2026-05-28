@@ -67,24 +67,33 @@ router.post('/', auth, upload.array('photos', 5), async (req, res) => {
     if (existing_photos) {
       const paths = (Array.isArray(existing_photos) ? existing_photos : existing_photos.split(',')).filter(Boolean);
       for (const p of paths) {
-        if (p.startsWith('data:')) {
-          // Convert base64 data URL to Blob upload
-          const matches = p.match(/^data:([^;]+);base64,(.+)$/);
-          if (matches) {
-            const [, mime, b64] = matches;
-            const buffer = Buffer.from(b64, 'base64');
-            const ext = mime.split('/')[1] || 'jpg';
-            const url = await uploadFile(buffer, `photo.${ext}`, mime);
-            allPhotos.push(url);
+        try {
+          if (p.startsWith('data:')) {
+            const matches = p.match(/^data:([^;]+);base64,(.+)$/);
+            if (matches) {
+              const [, mime, b64] = matches;
+              const buffer = Buffer.from(b64, 'base64');
+              const ext = mime.split('/')[1] || 'jpg';
+              const url = await uploadFile(buffer, `photo.${ext}`, mime);
+              allPhotos.push(url);
+            }
+          } else {
+            allPhotos.push(p);
           }
-        } else {
-          allPhotos.push(p);
+        } catch (uploadErr) {
+          console.error('Photo upload failed (plant will save without photo):', uploadErr.message);
         }
       }
     }
     if (req.files?.length) {
-      const uploaded = await Promise.all(req.files.map(f => uploadFile(f.buffer, f.originalname, f.mimetype)));
-      allPhotos.push(...uploaded);
+      for (const f of req.files) {
+        try {
+          const url = await uploadFile(f.buffer, f.originalname, f.mimetype);
+          allPhotos.push(url);
+        } catch (uploadErr) {
+          console.error('Photo upload failed:', uploadErr.message);
+        }
+      }
     }
 
     let coverPhoto = null;
