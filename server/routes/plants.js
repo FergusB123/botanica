@@ -35,9 +35,8 @@ router.post('/identify', auth, upload.array('photos', 5), async (req, res) => {
   try {
     const imageData = req.files.map(f => ({ buffer: f.buffer, mimetype: f.mimetype }));
     const identification = await claude.identifyPlant(imageData);
-    // Return photos as base64 data URLs — no Blob needed at identify stage
-    // They get uploaded to Blob when the plant is actually saved
-    const photos = req.files.map(f => `data:${f.mimetype};base64,${f.buffer.toString('base64')}`);
+    // Upload to Blob immediately so we have a real URL for the review step and save step
+    const photos = await Promise.all(req.files.map(f => uploadFile(f.buffer, f.originalname, f.mimetype)));
     res.json({ identification, photos });
   } catch (err) {
     console.error('Identify error:', err.message);
@@ -63,28 +62,12 @@ router.post('/', auth, upload.array('photos', 5), async (req, res) => {
     const plant = rows[0];
 
     const allPhotos = [];
-    // Handle existing_photos — may be Blob URLs or base64 data URLs from the identify step
+    // existing_photos are Blob URLs returned from the identify step
     if (existing_photos) {
-      const paths = (Array.isArray(existing_photos) ? existing_photos : existing_photos.split(',')).filter(Boolean);
-      for (const p of paths) {
-        try {
-          if (p.startsWith('data:')) {
-            const matches = p.match(/^data:([^;]+);base64,(.+)$/);
-            if (matches) {
-              const [, mime, b64] = matches;
-              const buffer = Buffer.from(b64, 'base64');
-              const ext = mime.split('/')[1] || 'jpg';
-              const url = await uploadFile(buffer, `photo.${ext}`, mime);
-              allPhotos.push(url);
-            }
-          } else {
-            allPhotos.push(p);
-          }
-        } catch (uploadErr) {
-          console.error('Photo upload failed (plant will save without photo):', uploadErr.message);
-        }
-      }
+      const paths = (Array.isArray(existing_photos) ? existing_photos : [existing_photos]).filter(Boolean);
+      allPhotos.push(...paths);
     }
+    // Any additional photos uploaded directly on the save screen
     if (req.files?.length) {
       for (const f of req.files) {
         try {
