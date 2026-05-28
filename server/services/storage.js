@@ -12,14 +12,19 @@ async function uploadFile(buffer, originalname, mimetype) {
     const dataURI = `data:${mimetype};base64,${base64}`;
 
     const publicId = uuidv4().replace(/-/g, '');
-    const body = new URLSearchParams();
-    body.append('file', dataURI);
-    body.append('upload_preset', uploadPreset);
-    body.append('public_id', publicId);
+    const ext = (mimetype.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+    const filename = `${publicId}.${ext}`;
+
+    // Send as multipart/form-data with actual binary — avoids data URI slash issues
+    const formData = new FormData();
+    const blob = new Blob([buffer], { type: mimetype });
+    formData.append('file', blob, filename);
+    formData.append('upload_preset', uploadPreset);
+    formData.append('public_id', publicId);
 
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body }
+      { method: 'POST', body: formData }
     );
 
     if (!res.ok) {
