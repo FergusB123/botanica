@@ -11,9 +11,11 @@ async function uploadFile(buffer, originalname, mimetype) {
     const base64 = buffer.toString('base64');
     const dataURI = `data:${mimetype};base64,${base64}`;
 
+    const publicId = uuidv4().replace(/-/g, '');
     const body = new URLSearchParams();
     body.append('file', dataURI);
     body.append('upload_preset', uploadPreset);
+    body.append('public_id', publicId);
 
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
