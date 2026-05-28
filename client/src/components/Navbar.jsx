@@ -5,13 +5,25 @@ import { useAuth } from '../context/AuthContext'
 import NotificationPanel from './NotificationPanel'
 import api from '../api/client'
 
+// Clean geometric leaf mark
+function LeafMark({ className = '' }) {
+  return (
+    <svg width="18" height="20" viewBox="0 0 18 20" fill="none" className={className}>
+      <path d="M9 19V10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+      <path d="M9 10C9 10 3 7.5 3 2.5C3 2.5 8 1.5 12 5C13.5 6.5 13 9.5 9 10Z" fill="currentColor"/>
+      <path d="M9 10C12 8 15 5.5 14 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.5"/>
+    </svg>
+  )
+}
+
 export default function Navbar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [notifOpen, setNotifOpen] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [notifOpen, setNotifOpen]   = useState(false)
+  const [menuOpen, setMenuOpen]     = useState(false)
+  const [userOpen, setUserOpen]     = useState(false)
   const [notifications, setNotifications] = useState([])
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadCount, setUnreadCount]     = useState(0)
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -30,29 +42,29 @@ export default function Navbar() {
   const handleLogout = () => { logout(); navigate('/login') }
 
   const navItems = [
-    { to: '/', label: 'Home', exact: true },
+    { to: '/',       label: 'Home',      exact: true },
     { to: '/plants', label: 'My Plants' },
-    { to: '/rooms', label: 'Rooms' },
+    { to: '/rooms',  label: 'Rooms'     },
   ]
 
   const linkClass = ({ isActive }) =>
-    `text-sm font-semibold font-sans transition-colors duration-150 ${isActive ? 'text-volt' : 'text-white/50 hover:text-white'}`
+    `text-sm font-medium font-sans transition-colors ${isActive ? 'text-white' : 'text-white/50 hover:text-white/80'}`
 
   return (
-    <header className="sticky top-0 z-40 bg-void/80 backdrop-blur-xl border-b border-white/[0.05]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <header className="bg-jet border-b border-white/[0.07] sticky top-0 z-40">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14">
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-volt flex items-center justify-center shadow-volt">
-              <span className="text-[#070A07] text-base">🌿</span>
+            <div className="w-7 h-7 flex items-center justify-center">
+              <LeafMark className="text-white" />
             </div>
-            <span className="font-display text-lg font-bold text-white tracking-tight">Botanica</span>
+            <span className="font-display text-lg text-white italic tracking-tight">Botanica</span>
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-7">
+          <nav className="hidden md:flex items-center gap-6">
             {navItems.map(item => (
               <NavLink key={item.to} to={item.to} end={item.exact} className={linkClass}>
                 {item.label}
@@ -60,22 +72,22 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
+          {/* Right actions */}
+          <div className="flex items-center gap-1.5">
             <Link to="/plants/add"
-              className="hidden sm:flex items-center gap-1.5 bg-volt text-[#070A07] rounded-xl px-4 py-2 text-sm font-bold hover:bg-volt-dim transition-colors">
+              className="hidden sm:flex items-center gap-1.5 bg-white text-jet rounded-lg px-3.5 py-1.5 text-sm font-medium hover:bg-white/90 transition-colors">
               <Plus size={14} strokeWidth={2.5} />
               Add plant
             </Link>
 
-            {/* Notification bell */}
+            {/* Notifications */}
             <div className="relative">
               <button
                 onClick={() => setNotifOpen(o => !o)}
-                className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/5 transition-colors">
-                <Bell size={18} className="text-white/50" />
+                className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors">
+                <Bell size={16} className="text-white/60" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-volt rounded-full" />
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-leaf rounded-full" />
                 )}
               </button>
               {notifOpen && (
@@ -91,61 +103,60 @@ export default function Navbar() {
             {/* User menu */}
             <div className="relative hidden md:block">
               <button
-                onClick={() => setMenuOpen(o => !o)}
-                className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-white/5 transition-colors">
-                <div className="w-7 h-7 rounded-full bg-volt flex items-center justify-center text-[#070A07] text-sm font-bold">
+                onClick={() => setUserOpen(o => !o)}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/10 transition-colors">
+                <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-semibold">
                   {user?.name?.[0]?.toUpperCase()}
                 </div>
-                <span className="text-sm font-semibold text-white/60">{user?.name?.split(' ')[0]}</span>
+                <span className="text-sm font-medium text-white/60">{user?.name?.split(' ')[0]}</span>
               </button>
-              {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-white/[0.08] rounded-xl shadow-lifted py-1 z-50 animate-slide-up">
-                  <Link to="/settings" onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/70 hover:bg-white/5 transition-colors">
-                    <Settings size={15} /> Settings
+              {userOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-44 bg-white border border-border rounded-xl shadow-lifted py-1 z-50 animate-slide-up">
+                  <Link to="/settings" onClick={() => setUserOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink hover:bg-card transition-colors">
+                    <Settings size={14} className="text-dust" /> Settings
                   </Link>
-                  <hr className="my-1 border-white/[0.06]" />
+                  <hr className="my-1 border-border" />
                   <button onClick={handleLogout}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-ember hover:bg-ember/10 transition-colors">
-                    <LogOut size={15} /> Sign out
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-crimson hover:bg-crimson-bg transition-colors">
+                    <LogOut size={14} /> Sign out
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Mobile hamburger */}
+            {/* Mobile burger */}
             <button
-              className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/5 transition-colors"
+              className="md:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
               onClick={() => setMenuOpen(o => !o)}>
-              {menuOpen ? <X size={18} className="text-white" /> : <Menu size={18} className="text-white/60" />}
+              {menuOpen ? <X size={17} className="text-white" /> : <Menu size={17} className="text-white/60" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile drawer */}
       {menuOpen && (
-        <div className="md:hidden border-t border-white/[0.05] bg-void py-3 px-4 space-y-1 animate-slide-up">
+        <div className="md:hidden bg-jet border-t border-white/[0.07] px-4 py-3 space-y-0.5 animate-slide-up">
           {navItems.map(item => (
             <NavLink key={item.to} to={item.to} end={item.exact} onClick={() => setMenuOpen(false)}
               className={({ isActive }) =>
-                `block px-3 py-2.5 rounded-xl text-sm font-semibold ${isActive ? 'bg-volt/10 text-volt' : 'text-white/50 hover:bg-white/5 hover:text-white'}`
-              }>
+                `block px-3 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'text-white bg-white/10' : 'text-white/50 hover:text-white hover:bg-white/5'}`}>
               {item.label}
             </NavLink>
           ))}
           <Link to="/plants/add" onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/50 hover:bg-white/5 hover:text-white">
-            <Plus size={14} /> Add Plant
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:text-white hover:bg-white/5">
+            <Plus size={13} /> Add Plant
           </Link>
-          <hr className="border-white/[0.06] my-1" />
+          <hr className="border-white/[0.07] my-1" />
           <Link to="/settings" onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-white/50 hover:bg-white/5 hover:text-white">
-            <Settings size={14} /> Settings
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/50 hover:text-white hover:bg-white/5">
+            <Settings size={13} /> Settings
           </Link>
           <button onClick={handleLogout}
-            className="w-full text-left flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-ember hover:bg-ember/10">
-            <LogOut size={14} /> Sign out
+            className="w-full text-left flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-red-400 hover:bg-white/5">
+            <LogOut size={13} /> Sign out
           </button>
         </div>
       )}

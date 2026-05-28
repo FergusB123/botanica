@@ -7,19 +7,19 @@ import toast from 'react-hot-toast'
 
 function Section({ icon, title, children }) {
   return (
-    <div className="card space-y-5">
-      <div className="flex items-center gap-3 pb-4 border-b border-white/[0.06]">
-        <div className="w-8 h-8 rounded-lg bg-volt/10 border border-volt/20 flex items-center justify-center text-volt">{icon}</div>
-        <h2 className="section-title">{title}</h2>
+    <div className="bg-white border border-border rounded-xl overflow-hidden">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border">
+        <div className="w-7 h-7 rounded-lg bg-card border border-border flex items-center justify-center text-dust">{icon}</div>
+        <h2 className="font-display text-xl text-jet">{title}</h2>
       </div>
-      {children}
+      <div className="p-6 space-y-5">{children}</div>
     </div>
   )
 }
 
 export default function Settings() {
   const { user, updateUser } = useAuth()
-  const [name, setName] = useState(user?.name || '')
+  const [name, setName] = useState(user?.name||'')
   const [savingProfile, setSavingProfile] = useState(false)
   const [currentPw, setCurrentPw] = useState('')
   const [newPw, setNewPw] = useState('')
@@ -29,189 +29,100 @@ export default function Settings() {
   const [apiKey, setApiKey] = useState('')
   const [apiKeyConfigured, setApiKeyConfigured] = useState(null)
   const [apiKeyPreview, setApiKeyPreview] = useState(null)
-  const [showApiKey, setShowApiKey] = useState(false)
+  const [showKey, setShowKey] = useState(false)
   const [savingKey, setSavingKey] = useState(false)
   const [isVercel, setIsVercel] = useState(false)
-  const [pushEnabled, setPushEnabled] = useState(false)
-  const [pushSupported] = useState('Notification' in window && 'serviceWorker' in navigator)
 
   useEffect(() => {
-    api.get('/config').then(res => {
-      setApiKeyConfigured(res.data.apiKeyConfigured)
-      setApiKeyPreview(res.data.apiKeyPreview)
-      setIsVercel(res.data.isVercel)
-    }).catch(() => {})
-    if (Notification.permission === 'granted') setPushEnabled(true)
+    api.get('/config').then(r => { setApiKeyConfigured(r.data.apiKeyConfigured); setApiKeyPreview(r.data.apiKeyPreview); setIsVercel(r.data.isVercel) }).catch(()=>{})
   }, [])
 
   const saveProfile = async () => {
-    if (!name.trim()) { toast.error('Name is required'); return }
+    if (!name.trim()) { toast.error('Name required'); return }
     setSavingProfile(true)
-    try {
-      const res = await api.put('/auth/profile', { name })
-      updateUser(res.data.user)
-      toast.success('Profile updated!')
-    } catch (err) { toast.error(err.response?.data?.error || 'Failed') }
-    finally { setSavingProfile(false) }
+    try { const r=await api.put('/auth/profile',{name}); updateUser(r.data.user); toast.success('Updated!') }
+    catch(err) { toast.error(err.response?.data?.error||'Failed') } finally { setSavingProfile(false) }
   }
-
-  const changePassword = async () => {
-    if (newPw !== confirmPw) { toast.error('Passwords do not match'); return }
-    if (newPw.length < 8) { toast.error('At least 8 characters'); return }
+  const changePw = async () => {
+    if (newPw!==confirmPw) { toast.error('Passwords do not match'); return }
+    if (newPw.length<8) { toast.error('Min 8 characters'); return }
     setSavingPw(true)
-    try {
-      await api.put('/auth/profile', { currentPassword: currentPw, newPassword: newPw })
-      setCurrentPw(''); setNewPw(''); setConfirmPw('')
-      toast.success('Password changed!')
-    } catch (err) { toast.error(err.response?.data?.error || 'Failed') }
-    finally { setSavingPw(false) }
+    try { await api.put('/auth/profile',{currentPassword:currentPw,newPassword:newPw}); setCurrentPw(''); setNewPw(''); setConfirmPw(''); toast.success('Password changed!') }
+    catch(err) { toast.error(err.response?.data?.error||'Failed') } finally { setSavingPw(false) }
   }
-
-  const saveApiKey = async () => {
-    if (!apiKey.trim()) { toast.error('Please enter an API key'); return }
+  const saveKey = async () => {
+    if (!apiKey.trim()) { toast.error('Enter API key'); return }
     setSavingKey(true)
-    try {
-      const res = await api.post('/config/api-key', { apiKey })
-      setApiKeyConfigured(true); setApiKeyPreview(res.data.preview); setApiKey('')
-      toast.success('API key saved! 🌿')
-    } catch (err) { toast.error(err.response?.data?.error || 'Failed') }
-    finally { setSavingKey(false) }
-  }
-
-  const requestPush = async () => {
-    const perm = await Notification.requestPermission()
-    if (perm === 'granted') { setPushEnabled(true); toast.success('Push notifications enabled! 🔔') }
-    else toast.error('Permission denied')
+    try { const r=await api.post('/config/api-key',{apiKey}); setApiKeyConfigured(true); setApiKeyPreview(r.data.preview); setApiKey(''); toast.success('API key saved!') }
+    catch(err) { toast.error(err.response?.data?.error||'Failed') } finally { setSavingKey(false) }
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-      <div>
-        <h1 className="page-title">Settings</h1>
-        <p className="text-sm text-white/30 font-sans mt-0.5">Manage your account and preferences</p>
+    <div className="max-w-2xl mx-auto space-y-5 animate-fade-in">
+      <div className="pb-4 border-b border-border">
+        <h1 className="font-display text-4xl text-jet">Settings</h1>
+        <p className="font-sans text-sm text-dust mt-1">Manage your account and preferences</p>
       </div>
 
       {/* API Key */}
-      <Section icon={<Key size={15} />} title="Anthropic API Key">
-        <div className={`flex items-center gap-3 p-4 rounded-xl border ${apiKeyConfigured ? 'bg-volt/[0.06] border-volt/20' : 'bg-ember/[0.06] border-ember/20'}`}>
-          {apiKeyConfigured
-            ? <CheckCircle size={17} className="text-volt flex-shrink-0" />
-            : <AlertCircle size={17} className="text-ember flex-shrink-0" />
-          }
+      <Section icon={<Key size={14}/>} title="API Key">
+        <div className={`flex items-start gap-3 p-4 rounded-lg border ${apiKeyConfigured?'bg-leaf-bg border-leaf/20':'bg-crimson-bg border-crimson/20'}`}>
+          {apiKeyConfigured ? <CheckCircle size={16} className="text-grove mt-0.5 flex-shrink-0"/> : <AlertCircle size={16} className="text-crimson mt-0.5 flex-shrink-0"/>}
           <div>
-            <p className={`font-sans text-sm font-semibold ${apiKeyConfigured ? 'text-volt' : 'text-ember'}`}>
-              {apiKeyConfigured ? 'API key configured' : 'API key not set'}
-            </p>
-            <p className="text-xs text-white/30 mt-0.5">
-              {apiKeyConfigured
-                ? <><span className="font-mono">{apiKeyPreview}</span> — AI features enabled</>
-                : 'Required for plant identification, health checks & care guides'
-              }
-            </p>
+            <p className={`text-sm font-medium ${apiKeyConfigured?'text-grove':'text-crimson'}`}>{apiKeyConfigured?'Configured':'Not set'}</p>
+            <p className="text-xs text-dust mt-0.5">{apiKeyConfigured?<><span className="font-mono">{apiKeyPreview}</span> — AI features enabled</>:'Required for plant identification, health checks & care guides'}</p>
           </div>
         </div>
-
         {isVercel ? (
-          <div className="bg-volt/[0.04] border border-volt/10 rounded-xl p-4 text-sm font-sans text-white/50 space-y-1">
-            <p className="font-bold text-volt/80">Running on Vercel</p>
-            <p>Go to <strong className="text-white/70">Vercel → Project → Settings → Environment Variables</strong>, add <code className="bg-white/5 px-1.5 py-0.5 rounded text-volt/80">ANTHROPIC_API_KEY</code>, then redeploy.</p>
+          <div className="bg-card border border-border rounded-lg p-4 text-sm font-sans text-ink">
+            <p className="font-medium mb-1">Running on Vercel</p>
+            <p className="text-dust text-xs">Go to <strong>Vercel → Project → Settings → Environment Variables</strong>, add <code className="bg-white border border-border px-1.5 py-0.5 rounded text-xs">ANTHROPIC_API_KEY</code>, then redeploy.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            <div>
-              <label className="label">{apiKeyConfigured ? 'Replace API key' : 'Enter your API key'}</label>
+            <div><label className="label">{apiKeyConfigured?'Replace key':'Enter key'}</label>
               <div className="relative">
-                <input type={showApiKey ? 'text' : 'password'} className="input pr-11 font-mono text-sm"
-                  placeholder="sk-ant-api03-..." value={apiKey} onChange={e => setApiKey(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && saveApiKey()} />
-                <button type="button" onClick={() => setShowApiKey(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors">
-                  {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                <input type={showKey?'text':'password'} className="input pr-11 font-mono text-sm" placeholder="sk-ant-api03-..."
+                  value={apiKey} onChange={e=>setApiKey(e.target.value)} onKeyDown={e=>e.key==='Enter'&&saveKey()}/>
+                <button type="button" onClick={()=>setShowKey(v=>!v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-dust hover:text-ink">
+                  {showKey?<EyeOff size={15}/>:<Eye size={15}/>}
                 </button>
               </div>
-              <p className="text-xs text-white/25 mt-1.5">Get your key at <span className="text-white/40">console.anthropic.com</span></p>
+              <p className="text-xs text-dust mt-1.5">Get your key at <span className="text-ink">console.anthropic.com</span></p>
             </div>
-            <button onClick={saveApiKey} disabled={savingKey || !apiKey.trim()} className="btn-primary flex items-center gap-2 py-2.5">
-              <Key size={14} /> {savingKey ? 'Saving…' : apiKeyConfigured ? 'Update key' : 'Save key & enable AI'}
+            <button onClick={saveKey} disabled={savingKey||!apiKey.trim()} className="btn-primary gap-2">
+              <Key size={13}/> {savingKey?'Saving…':apiKeyConfigured?'Update key':'Save & enable AI'}
             </button>
           </div>
         )}
       </Section>
 
       {/* Profile */}
-      <Section icon={<User size={15} />} title="Profile">
-        <div>
-          <label className="label">Display name</label>
-          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
-        </div>
-        <div>
-          <label className="label">Email address</label>
-          <input className="input opacity-50 cursor-not-allowed" value={user?.email || ''} disabled />
-          <p className="text-xs text-white/25 mt-1">Email cannot be changed</p>
-        </div>
-        <div>
-          <label className="label">Member since</label>
-          <p className="text-sm text-white/40 font-sans">{user?.created_at ? format(new Date(user.created_at), 'PPP') : '—'}</p>
-        </div>
-        <button onClick={saveProfile} disabled={savingProfile} className="btn-primary flex items-center gap-2 py-2.5">
-          <Save size={14} /> {savingProfile ? 'Saving…' : 'Save changes'}
-        </button>
+      <Section icon={<User size={14}/>} title="Profile">
+        <div><label className="label">Name</label><input className="input" value={name} onChange={e=>setName(e.target.value)}/></div>
+        <div><label className="label">Email</label><input className="input opacity-50 cursor-not-allowed" value={user?.email||''} disabled/><p className="text-xs text-dust mt-1">Cannot be changed</p></div>
+        <div><label className="label">Member since</label><p className="text-sm text-ink">{user?.created_at?format(new Date(user.created_at),'PPP'):'—'}</p></div>
+        <button onClick={saveProfile} disabled={savingProfile} className="btn-primary gap-2"><Save size={13}/>{savingProfile?'Saving…':'Save changes'}</button>
       </Section>
 
       {/* Password */}
-      <Section icon={<Lock size={15} />} title="Change password">
+      <Section icon={<Lock size={14}/>} title="Password">
         <div className="space-y-3">
-          {['Current password', 'New password', 'Confirm new password'].map((label, i) => (
-            <div key={i}>
-              <label className="label">{label}</label>
-              <input type={showPws ? 'text' : 'password'} className="input" placeholder="••••••••"
-                value={[currentPw, newPw, confirmPw][i]}
-                onChange={e => [setCurrentPw, setNewPw, setConfirmPw][i](e.target.value)} />
-            </div>
+          {[['Current password',currentPw,setCurrentPw],['New password',newPw,setNewPw],['Confirm new password',confirmPw,setConfirmPw]].map(([l,v,s])=>(
+            <div key={l}><label className="label">{l}</label><input type={showPws?'text':'password'} className="input" placeholder="••••••••" value={v} onChange={e=>s(e.target.value)}/></div>
           ))}
-          <label className="flex items-center gap-2 text-sm text-white/40 cursor-pointer select-none">
-            <input type="checkbox" checked={showPws} onChange={e => setShowPws(e.target.checked)} className="rounded" />
-            Show passwords
+          <label className="flex items-center gap-2 text-sm text-ink cursor-pointer select-none">
+            <input type="checkbox" checked={showPws} onChange={e=>setShowPws(e.target.checked)}/> Show passwords
           </label>
         </div>
-        <button onClick={changePassword} disabled={savingPw || !currentPw || !newPw || !confirmPw}
-          className="btn-secondary flex items-center gap-2 py-2.5">
-          <Lock size={14} /> {savingPw ? 'Updating…' : 'Update password'}
-        </button>
-      </Section>
-
-      {/* Notifications */}
-      <Section icon={<Bell size={15} />} title="Notifications">
-        <div className="flex items-center justify-between py-1">
-          <div>
-            <p className="font-sans text-sm font-semibold text-white/80">In-app notifications</p>
-            <p className="text-xs text-white/30 mt-0.5">Watering reminders and health alerts</p>
-          </div>
-          <div className="w-9 h-5 rounded-full bg-volt flex items-center justify-end pr-0.5">
-            <div className="w-4 h-4 rounded-full bg-[#070A07] shadow" />
-          </div>
-        </div>
-        <div className="flex items-center justify-between py-1">
-          <div>
-            <p className="font-sans text-sm font-semibold text-white/80">Browser push notifications</p>
-            <p className="text-xs text-white/30 mt-0.5">{pushSupported ? 'Receive alerts when app is closed' : 'Not supported in this browser'}</p>
-          </div>
-          {pushSupported && (
-            pushEnabled
-              ? <span className="badge bg-volt/10 text-volt border border-volt/20">Enabled</span>
-              : <button onClick={requestPush} className="btn-secondary py-1.5 text-xs">Enable</button>
-          )}
-        </div>
+        <button onClick={changePw} disabled={savingPw||!currentPw||!newPw||!confirmPw} className="btn-secondary gap-2"><Lock size={13}/>{savingPw?'Updating…':'Update password'}</button>
       </Section>
 
       {/* About */}
-      <Section icon={<Leaf size={15} />} title="About Botanica">
+      <Section icon={<Leaf size={14}/>} title="About">
         <div className="space-y-2">
-          {[['Version', '1.0.0'], ['AI powered by', 'Claude (Anthropic)'], ['Database', 'Neon PostgreSQL'], ['Storage', 'Cloudinary']].map(([k, v]) => (
-            <div key={k} className="flex justify-between text-sm font-sans">
-              <span className="text-white/30">{k}</span>
-              <span className="text-white/70 font-medium">{v}</span>
-            </div>
+          {[['Version','1.0.0'],['AI','Claude by Anthropic'],['Database','Neon PostgreSQL'],['Storage','Cloudinary']].map(([k,v])=>(
+            <div key={k} className="flex justify-between text-sm"><span className="text-dust">{k}</span><span className="font-medium text-jet">{v}</span></div>
           ))}
         </div>
       </Section>

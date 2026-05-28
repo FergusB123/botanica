@@ -5,100 +5,86 @@ import { formatDistanceToNow } from 'date-fns'
 import api from '../api/client'
 import toast from 'react-hot-toast'
 
-const TYPE_ICONS = {
-  watering_reminder: <Droplets size={15} className="text-volt" />,
-  health_alert:      <Heart size={15} className="text-ember" />,
-}
-
 export default function NotificationPanel({ notifications, unreadCount, onClose, onUpdate }) {
-  const panelRef = useRef(null)
+  const ref = useRef(null)
 
   useEffect(() => {
-    function handleClick(e) {
-      if (panelRef.current && !panelRef.current.contains(e.target)) onClose()
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
   }, [onClose])
 
   const markRead = async (id) => {
     try { await api.put(`/notifications/${id}/read`); onUpdate() } catch { }
   }
-
   const markAllRead = async () => {
-    try { await api.put('/notifications/read-all'); onUpdate(); toast.success('All read') } catch { toast.error('Failed') }
+    try { await api.put('/notifications/read-all'); onUpdate(); toast.success('All read') } catch { }
   }
-
   const markWatered = async (plantId, notifId) => {
     try {
       await api.post(`/plants/${plantId}/water`)
       await api.put(`/notifications/${notifId}/read`)
-      onUpdate()
-      toast.success('Plant watered 💧')
+      onUpdate(); toast.success('Plant watered 💧')
     } catch { toast.error('Failed') }
   }
 
   return (
-    <div ref={panelRef}
-      className="absolute right-0 top-full mt-2 w-96 bg-surface border border-white/[0.08] rounded-2xl shadow-lifted z-50 overflow-hidden animate-slide-up">
+    <div ref={ref}
+      className="absolute right-0 top-full mt-2 w-88 bg-white border border-border rounded-xl shadow-lifted z-50 overflow-hidden animate-slide-up"
+      style={{ width: 368 }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
         <div className="flex items-center gap-2">
-          <Bell size={16} className="text-volt" />
-          <h3 className="font-display text-base font-bold text-white">Notifications</h3>
+          <span className="font-display text-base text-jet">Notifications</span>
           {unreadCount > 0 && (
-            <span className="badge bg-volt/10 text-volt border border-volt/20 text-xs">{unreadCount}</span>
+            <span className="badge bg-jet text-white text-xs">{unreadCount}</span>
           )}
         </div>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <button onClick={markAllRead} className="text-xs text-white/30 hover:text-white/60 flex items-center gap-1 transition-colors">
-              <CheckCheck size={13} /> Mark all read
+            <button onClick={markAllRead} className="text-xs text-dust hover:text-ink flex items-center gap-1 transition-colors">
+              <CheckCheck size={12} /> Mark all read
             </button>
           )}
-          <button onClick={onClose} className="p-1 hover:bg-white/5 rounded-lg transition-colors">
-            <X size={15} className="text-white/40" />
+          <button onClick={onClose} className="p-1 hover:bg-ghost rounded-lg transition-colors">
+            <X size={14} className="text-dust" />
           </button>
         </div>
       </div>
 
       {/* List */}
-      <div className="max-h-[420px] overflow-y-auto">
+      <div className="max-h-[400px] overflow-y-auto">
         {notifications.length === 0 ? (
-          <div className="py-12 text-center">
-            <p className="text-2xl mb-2">🔔</p>
-            <p className="text-sm text-white/30 font-sans">All caught up!</p>
+          <div className="py-10 text-center">
+            <Bell size={24} className="text-ghost mx-auto mb-2" />
+            <p className="text-sm text-dust font-sans">You're all caught up</p>
           </div>
         ) : (
           notifications.map(n => (
-            <div key={n.id}
-              className={`px-5 py-4 border-b border-white/[0.04] last:border-0 transition-colors ${!n.read ? 'bg-volt/[0.03]' : ''}`}>
+            <div key={n.id} className={`px-5 py-3.5 border-b border-border last:border-0 ${!n.read ? 'bg-card' : ''}`}>
               <div className="flex gap-3">
-                <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  {TYPE_ICONS[n.type] || <Bell size={14} className="text-white/30" />}
+                <div className="w-7 h-7 rounded-lg bg-ghost flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {n.type === 'watering_reminder' ? <Droplets size={13} className="text-cerulean" /> : <Heart size={13} className="text-crimson" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white/80 font-sans leading-snug">{n.message}</p>
-                  <p className="text-xs text-white/25 mt-1">
-                    {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                  </p>
+                  <p className="text-sm text-ink font-sans leading-snug">{n.message}</p>
+                  <p className="text-xs text-dust mt-0.5">{formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}</p>
                   {n.type === 'watering_reminder' && n.plant_id && (
                     <div className="flex gap-2 mt-2">
                       <button onClick={() => markWatered(n.plant_id, n.id)}
-                        className="text-xs bg-volt/10 text-volt border border-volt/20 px-3 py-1 rounded-full hover:bg-volt/20 transition-colors font-semibold">
+                        className="text-xs bg-cerulean-bg text-cerulean border border-cerulean/20 px-2.5 py-1 rounded-full hover:bg-cerulean/10 transition-colors font-medium">
                         💧 Mark watered
                       </button>
                       <Link to={`/plants/${n.plant_id}`} onClick={onClose}
-                        className="text-xs text-white/30 hover:text-white/60 px-3 py-1 rounded-full hover:bg-white/5 transition-colors">
-                        View plant
+                        className="text-xs text-dust hover:text-ink px-2.5 py-1 rounded-full hover:bg-ghost transition-colors">
+                        View
                       </Link>
                     </div>
                   )}
                 </div>
                 {!n.read && (
-                  <button onClick={() => markRead(n.id)}
-                    className="p-1 hover:bg-white/5 rounded-lg transition-colors flex-shrink-0" title="Mark as read">
-                    <Check size={13} className="text-white/25" />
+                  <button onClick={() => markRead(n.id)} className="p-1 hover:bg-ghost rounded transition-colors flex-shrink-0" title="Mark read">
+                    <Check size={12} className="text-dust" />
                   </button>
                 )}
               </div>
