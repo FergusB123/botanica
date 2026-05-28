@@ -8,8 +8,8 @@ import toast from 'react-hot-toast'
 function Section({ icon, title, children }) {
   return (
     <div className="card space-y-5">
-      <div className="flex items-center gap-2 pb-3 border-b border-stone-100">
-        <div className="w-8 h-8 rounded-lg bg-forest-50 flex items-center justify-center text-forest">{icon}</div>
+      <div className="flex items-center gap-3 pb-4 border-b border-white/[0.06]">
+        <div className="w-8 h-8 rounded-lg bg-volt/10 border border-volt/20 flex items-center justify-center text-volt">{icon}</div>
         <h2 className="section-title">{title}</h2>
       </div>
       {children}
@@ -19,14 +19,21 @@ function Section({ icon, title, children }) {
 
 export default function Settings() {
   const { user, updateUser } = useAuth()
-
-  // ── API Key ───────────────────────────────────────────────────────────────
+  const [name, setName] = useState(user?.name || '')
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [currentPw, setCurrentPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [showPws, setShowPws] = useState(false)
+  const [savingPw, setSavingPw] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [apiKeyConfigured, setApiKeyConfigured] = useState(null)
   const [apiKeyPreview, setApiKeyPreview] = useState(null)
   const [showApiKey, setShowApiKey] = useState(false)
   const [savingKey, setSavingKey] = useState(false)
   const [isVercel, setIsVercel] = useState(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushSupported] = useState('Notification' in window && 'serviceWorker' in navigator)
 
   useEffect(() => {
     api.get('/config').then(res => {
@@ -34,38 +41,6 @@ export default function Settings() {
       setApiKeyPreview(res.data.apiKeyPreview)
       setIsVercel(res.data.isVercel)
     }).catch(() => {})
-  }, [])
-
-  const saveApiKey = async () => {
-    if (!apiKey.trim()) { toast.error('Please enter an API key'); return }
-    setSavingKey(true)
-    try {
-      const res = await api.post('/config/api-key', { apiKey })
-      setApiKeyConfigured(true)
-      setApiKeyPreview(res.data.preview)
-      setApiKey('')
-      toast.success('API key saved! AI features are now enabled 🌿')
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to save API key')
-    } finally {
-      setSavingKey(false)
-    }
-  }
-
-  // ── Profile ───────────────────────────────────────────────────────────────
-  const [name, setName] = useState(user?.name || '')
-  const [savingProfile, setSavingProfile] = useState(false)
-
-  const [currentPw, setCurrentPw] = useState('')
-  const [newPw, setNewPw] = useState('')
-  const [confirmPw, setConfirmPw] = useState('')
-  const [showPws, setShowPws] = useState(false)
-  const [savingPw, setSavingPw] = useState(false)
-
-  const [pushEnabled, setPushEnabled] = useState(false)
-  const [pushSupported] = useState('Notification' in window && 'serviceWorker' in navigator)
-
-  useEffect(() => {
     if (Notification.permission === 'granted') setPushEnabled(true)
   }, [])
 
@@ -76,227 +51,169 @@ export default function Settings() {
       const res = await api.put('/auth/profile', { name })
       updateUser(res.data.user)
       toast.success('Profile updated!')
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to update profile')
-    } finally {
-      setSavingProfile(false)
-    }
+    } catch (err) { toast.error(err.response?.data?.error || 'Failed') }
+    finally { setSavingProfile(false) }
   }
 
   const changePassword = async () => {
     if (newPw !== confirmPw) { toast.error('Passwords do not match'); return }
-    if (newPw.length < 8) { toast.error('Password must be at least 8 characters'); return }
+    if (newPw.length < 8) { toast.error('At least 8 characters'); return }
     setSavingPw(true)
     try {
       await api.put('/auth/profile', { currentPassword: currentPw, newPassword: newPw })
       setCurrentPw(''); setNewPw(''); setConfirmPw('')
       toast.success('Password changed!')
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to change password')
-    } finally {
-      setSavingPw(false)
-    }
+    } catch (err) { toast.error(err.response?.data?.error || 'Failed') }
+    finally { setSavingPw(false) }
   }
 
-  const requestPushPermission = async () => {
-    if (!pushSupported) { toast.error('Push notifications not supported in this browser'); return }
+  const saveApiKey = async () => {
+    if (!apiKey.trim()) { toast.error('Please enter an API key'); return }
+    setSavingKey(true)
     try {
-      const permission = await Notification.requestPermission()
-      if (permission === 'granted') {
-        setPushEnabled(true)
-        toast.success('Push notifications enabled! 🔔')
-      } else {
-        toast.error('Permission denied. Enable notifications in your browser settings.')
-      }
-    } catch {
-      toast.error('Failed to request permission')
-    }
+      const res = await api.post('/config/api-key', { apiKey })
+      setApiKeyConfigured(true); setApiKeyPreview(res.data.preview); setApiKey('')
+      toast.success('API key saved! 🌿')
+    } catch (err) { toast.error(err.response?.data?.error || 'Failed') }
+    finally { setSavingKey(false) }
+  }
+
+  const requestPush = async () => {
+    const perm = await Notification.requestPermission()
+    if (perm === 'granted') { setPushEnabled(true); toast.success('Push notifications enabled! 🔔') }
+    else toast.error('Permission denied')
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div>
         <h1 className="page-title">Settings</h1>
-        <p className="text-sm text-bark/50 font-sans mt-0.5">Manage your account and preferences</p>
+        <p className="text-sm text-white/30 font-sans mt-0.5">Manage your account and preferences</p>
       </div>
 
       {/* API Key */}
-      <Section icon={<Key size={16} />} title="Anthropic API Key">
-        <div className={`flex items-center gap-3 p-4 rounded-xl border ${apiKeyConfigured ? 'bg-sage-50 border-sage-200' : 'bg-terra-50 border-terra-200'}`}>
+      <Section icon={<Key size={15} />} title="Anthropic API Key">
+        <div className={`flex items-center gap-3 p-4 rounded-xl border ${apiKeyConfigured ? 'bg-volt/[0.06] border-volt/20' : 'bg-ember/[0.06] border-ember/20'}`}>
           {apiKeyConfigured
-            ? <CheckCircle size={18} className="text-sage-600 flex-shrink-0" />
-            : <AlertCircle size={18} className="text-terra-600 flex-shrink-0" />
+            ? <CheckCircle size={17} className="text-volt flex-shrink-0" />
+            : <AlertCircle size={17} className="text-ember flex-shrink-0" />
           }
           <div>
-            <p className={`font-sans text-sm font-semibold ${apiKeyConfigured ? 'text-sage-700' : 'text-terra-700'}`}>
+            <p className={`font-sans text-sm font-semibold ${apiKeyConfigured ? 'text-volt' : 'text-ember'}`}>
               {apiKeyConfigured ? 'API key configured' : 'API key not set'}
             </p>
-            <p className="text-xs text-bark/50 mt-0.5">
+            <p className="text-xs text-white/30 mt-0.5">
               {apiKeyConfigured
-                ? <>Current key: <span className="font-mono">{apiKeyPreview}</span> — AI features enabled</>
-                : 'Required for plant identification, health checks, and care guides'
+                ? <><span className="font-mono">{apiKeyPreview}</span> — AI features enabled</>
+                : 'Required for plant identification, health checks & care guides'
               }
             </p>
           </div>
         </div>
 
         {isVercel ? (
-          <div className="bg-forest-50 border border-forest-100 rounded-xl p-4 text-sm font-sans text-bark/70 space-y-1">
-            <p className="font-semibold text-forest">Running on Vercel</p>
-            <p>Go to your <strong>Vercel dashboard → Project → Settings → Environment Variables</strong>, add <code className="bg-white px-1 rounded">ANTHROPIC_API_KEY</code>, then redeploy.</p>
+          <div className="bg-volt/[0.04] border border-volt/10 rounded-xl p-4 text-sm font-sans text-white/50 space-y-1">
+            <p className="font-bold text-volt/80">Running on Vercel</p>
+            <p>Go to <strong className="text-white/70">Vercel → Project → Settings → Environment Variables</strong>, add <code className="bg-white/5 px-1.5 py-0.5 rounded text-volt/80">ANTHROPIC_API_KEY</code>, then redeploy.</p>
           </div>
         ) : (
           <div className="space-y-3">
             <div>
-              <label className="label">
-                {apiKeyConfigured ? 'Replace API key' : 'Enter your Anthropic API key'}
-              </label>
+              <label className="label">{apiKeyConfigured ? 'Replace API key' : 'Enter your API key'}</label>
               <div className="relative">
-                <input
-                  type={showApiKey ? 'text' : 'password'}
-                  className="input pr-11 font-mono text-sm"
-                  placeholder="sk-ant-api03-..."
-                  value={apiKey}
-                  onChange={e => setApiKey(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && saveApiKey()}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowApiKey(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-bark/40 hover:text-bark/70 transition-colors"
-                >
+                <input type={showApiKey ? 'text' : 'password'} className="input pr-11 font-mono text-sm"
+                  placeholder="sk-ant-api03-..." value={apiKey} onChange={e => setApiKey(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveApiKey()} />
+                <button type="button" onClick={() => setShowApiKey(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors">
                   {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              <p className="text-xs text-bark/40 mt-1.5">
-                Get your key at <span className="font-medium">console.anthropic.com</span> → API Keys.
-              </p>
+              <p className="text-xs text-white/25 mt-1.5">Get your key at <span className="text-white/40">console.anthropic.com</span></p>
             </div>
             <button onClick={saveApiKey} disabled={savingKey || !apiKey.trim()} className="btn-primary flex items-center gap-2 py-2.5">
-              <Key size={15} />
-              {savingKey ? 'Saving…' : apiKeyConfigured ? 'Update key' : 'Save key & enable AI'}
+              <Key size={14} /> {savingKey ? 'Saving…' : apiKeyConfigured ? 'Update key' : 'Save key & enable AI'}
             </button>
           </div>
         )}
       </Section>
 
       {/* Profile */}
-      <Section icon={<User size={16} />} title="Profile">
+      <Section icon={<User size={15} />} title="Profile">
         <div>
           <label className="label">Display name</label>
           <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
         </div>
         <div>
           <label className="label">Email address</label>
-          <input className="input bg-stone-50 text-bark/60" value={user?.email || ''} disabled />
-          <p className="text-xs text-bark/40 mt-1">Email cannot be changed</p>
+          <input className="input opacity-50 cursor-not-allowed" value={user?.email || ''} disabled />
+          <p className="text-xs text-white/25 mt-1">Email cannot be changed</p>
         </div>
         <div>
           <label className="label">Member since</label>
-          <p className="text-sm text-bark/60 font-sans">{user?.created_at ? format(new Date(user.created_at), 'PPP') : '—'}</p>
+          <p className="text-sm text-white/40 font-sans">{user?.created_at ? format(new Date(user.created_at), 'PPP') : '—'}</p>
         </div>
         <button onClick={saveProfile} disabled={savingProfile} className="btn-primary flex items-center gap-2 py-2.5">
-          <Save size={15} />
-          {savingProfile ? 'Saving…' : 'Save changes'}
+          <Save size={14} /> {savingProfile ? 'Saving…' : 'Save changes'}
         </button>
       </Section>
 
       {/* Password */}
-      <Section icon={<Lock size={16} />} title="Change password">
+      <Section icon={<Lock size={15} />} title="Change password">
         <div className="space-y-3">
-          <div>
-            <label className="label">Current password</label>
-            <div className="relative">
-              <input
-                type={showPws ? 'text' : 'password'}
-                className="input pr-10"
-                placeholder="••••••••"
-                value={currentPw}
-                onChange={e => setCurrentPw(e.target.value)}
-              />
-              <button type="button" onClick={() => setShowPws(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-bark/40 hover:text-bark/70">
-                {showPws ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+          {['Current password', 'New password', 'Confirm new password'].map((label, i) => (
+            <div key={i}>
+              <label className="label">{label}</label>
+              <input type={showPws ? 'text' : 'password'} className="input" placeholder="••••••••"
+                value={[currentPw, newPw, confirmPw][i]}
+                onChange={e => [setCurrentPw, setNewPw, setConfirmPw][i](e.target.value)} />
             </div>
-          </div>
-          <div>
-            <label className="label">New password</label>
-            <input type={showPws ? 'text' : 'password'} className="input" placeholder="At least 8 characters" value={newPw} onChange={e => setNewPw(e.target.value)} />
-          </div>
-          <div>
-            <label className="label">Confirm new password</label>
-            <input type={showPws ? 'text' : 'password'} className="input" placeholder="Repeat new password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} />
-          </div>
+          ))}
+          <label className="flex items-center gap-2 text-sm text-white/40 cursor-pointer select-none">
+            <input type="checkbox" checked={showPws} onChange={e => setShowPws(e.target.checked)} className="rounded" />
+            Show passwords
+          </label>
         </div>
-        <button
-          onClick={changePassword}
-          disabled={savingPw || !currentPw || !newPw || !confirmPw}
-          className="btn-secondary flex items-center gap-2 py-2.5"
-        >
-          <Lock size={15} />
-          {savingPw ? 'Updating…' : 'Update password'}
+        <button onClick={changePassword} disabled={savingPw || !currentPw || !newPw || !confirmPw}
+          className="btn-secondary flex items-center gap-2 py-2.5">
+          <Lock size={14} /> {savingPw ? 'Updating…' : 'Update password'}
         </button>
       </Section>
 
       {/* Notifications */}
-      <Section icon={<Bell size={16} />} title="Notifications">
-        <div className="flex items-center justify-between py-2">
+      <Section icon={<Bell size={15} />} title="Notifications">
+        <div className="flex items-center justify-between py-1">
           <div>
-            <p className="font-sans text-sm font-medium text-bark">In-app notifications</p>
-            <p className="text-xs text-bark/50 mt-0.5">Watering reminders and health alerts in the notification centre</p>
+            <p className="font-sans text-sm font-semibold text-white/80">In-app notifications</p>
+            <p className="text-xs text-white/30 mt-0.5">Watering reminders and health alerts</p>
           </div>
-          <div className="w-9 h-5 rounded-full bg-forest flex items-center justify-end pr-0.5">
-            <div className="w-4 h-4 rounded-full bg-white shadow" />
+          <div className="w-9 h-5 rounded-full bg-volt flex items-center justify-end pr-0.5">
+            <div className="w-4 h-4 rounded-full bg-[#070A07] shadow" />
           </div>
         </div>
-
-        <div className="flex items-center justify-between py-2">
+        <div className="flex items-center justify-between py-1">
           <div>
-            <p className="font-sans text-sm font-medium text-bark">Browser push notifications</p>
-            <p className="text-xs text-bark/50 mt-0.5">
-              {pushSupported ? 'Receive alerts even when the app is closed' : 'Not supported in this browser'}
-            </p>
+            <p className="font-sans text-sm font-semibold text-white/80">Browser push notifications</p>
+            <p className="text-xs text-white/30 mt-0.5">{pushSupported ? 'Receive alerts when app is closed' : 'Not supported in this browser'}</p>
           </div>
           {pushSupported && (
-            pushEnabled ? (
-              <span className="badge bg-sage-100 text-sage-700">Enabled</span>
-            ) : (
-              <button onClick={requestPushPermission} className="btn-secondary py-1.5 text-xs">
-                Enable
-              </button>
-            )
+            pushEnabled
+              ? <span className="badge bg-volt/10 text-volt border border-volt/20">Enabled</span>
+              : <button onClick={requestPush} className="btn-secondary py-1.5 text-xs">Enable</button>
           )}
-        </div>
-
-        <div className="bg-forest-50 rounded-xl p-4">
-          <p className="text-sm font-medium text-forest mb-1 flex items-center gap-2">
-            <Bell size={14} /> Daily watering check
-          </p>
-          <p className="text-xs text-bark/60">
-            A cron job runs every day at 8:00 AM and creates notifications for any plants that are due or overdue for watering.
-          </p>
         </div>
       </Section>
 
       {/* About */}
-      <Section icon={<Leaf size={16} />} title="About Botanica">
+      <Section icon={<Leaf size={15} />} title="About Botanica">
         <div className="space-y-2">
-          <div className="flex justify-between text-sm font-sans">
-            <span className="text-bark/60">Version</span>
-            <span className="text-bark font-medium">1.0.0</span>
-          </div>
-          <div className="flex justify-between text-sm font-sans">
-            <span className="text-bark/60">AI powered by</span>
-            <span className="text-bark font-medium">Claude (Anthropic)</span>
-          </div>
-          <div className="flex justify-between text-sm font-sans">
-            <span className="text-bark/60">Database</span>
-            <span className="text-bark font-medium">SQLite (local)</span>
-          </div>
+          {[['Version', '1.0.0'], ['AI powered by', 'Claude (Anthropic)'], ['Database', 'Neon PostgreSQL'], ['Storage', 'Cloudinary']].map(([k, v]) => (
+            <div key={k} className="flex justify-between text-sm font-sans">
+              <span className="text-white/30">{k}</span>
+              <span className="text-white/70 font-medium">{v}</span>
+            </div>
+          ))}
         </div>
-        <p className="text-xs text-bark/40 font-sans leading-relaxed">
-          Botanica is a personal plant care companion. Your data is stored locally on your device and never shared with third parties beyond the Claude API for plant identification and health checks.
-        </p>
       </Section>
     </div>
   )
