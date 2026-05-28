@@ -2,20 +2,25 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
-const isVercel = !!process.env.VERCEL || !!process.env.BLOB_READ_WRITE_TOKEN;
-
 async function uploadFile(buffer, originalname, mimetype) {
   const ext = path.extname(originalname) || '.jpg';
   const filename = `${uuidv4()}${ext}`;
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
 
-  if (isVercel) {
+  if (token) {
+    // Vercel Blob — pass token explicitly so it doesn't have to find it itself
     const { put } = require('@vercel/blob');
+    console.log('[storage] Uploading to Vercel Blob:', filename);
     const blob = await put(`botanica/${filename}`, buffer, {
       access: 'public',
       contentType: mimetype,
+      token,
     });
+    console.log('[storage] Blob URL:', blob.url);
     return blob.url;
   } else {
+    // Local disk (dev without Blob token)
+    console.log('[storage] BLOB_READ_WRITE_TOKEN not set — saving to local disk');
     const dir = path.join(__dirname, '..', 'uploads');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, filename), buffer);
@@ -25,9 +30,10 @@ async function uploadFile(buffer, originalname, mimetype) {
 
 async function deleteFile(fileUrl) {
   try {
-    if (isVercel && fileUrl?.startsWith('https://')) {
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (token && fileUrl?.startsWith('https://')) {
       const { del } = require('@vercel/blob');
-      await del(fileUrl);
+      await del(fileUrl, { token });
     } else if (fileUrl?.startsWith('/uploads/')) {
       const filePath = path.join(__dirname, '..', fileUrl);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
@@ -35,7 +41,6 @@ async function deleteFile(fileUrl) {
   } catch { /* ignore delete errors */ }
 }
 
-// Returns base64 from either a local path or fetches a remote URL
 async function fileToBase64(fileUrlOrPath) {
   if (fileUrlOrPath.startsWith('http')) {
     const res = await fetch(fileUrlOrPath);
