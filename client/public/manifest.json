@@ -1,0 +1,43 @@
+{
+  "name": "Botanica",
+  "short_name": "Botanica",
+  "description": "Your personal plant care companion",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#070A07",
+  "background_color": "#070A07",
+  "categories": ["lifestyle", "health"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Add Plant",
+      "short_name": "Add",
+      "description": "Identify and add a new plant",
+      "url": "/plants/add",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Plants",
+      "short_name": "Plants",
+      "description": "View your plant collection",
+      "url": "/plants",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
