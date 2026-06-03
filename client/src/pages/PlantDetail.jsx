@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ChevronLeft, Droplets, Sun, Thermometer, Droplet, Star, Skull,
   Zap, Clock, Plus, Camera, Trash2, Sparkles, ChevronDown, ChevronUp, Activity, CheckCircle
@@ -364,11 +364,12 @@ function CareGuide({ plant }) {
 export default function PlantDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [plant, setPlant] = useState(null)
   const [photos, setPhotos] = useState([])
   const [latestHealth, setLatestHealth] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview')
   const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async () => {

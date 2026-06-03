@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Sparkles, Check, Edit2 } from 'lucide-react'
+import { ChevronLeft, Sparkles, Check, Edit2, Activity } from 'lucide-react'
 import PhotoUpload from '../components/PhotoUpload'
 import api from '../api/client'
 import toast from 'react-hot-toast'
@@ -20,6 +20,7 @@ export default function AddPlant() {
   const [identification, setIdentification] = useState(null)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
+  const [includeHealthCheck, setIncludeHealthCheck] = useState(false)
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const setE = (k) => (e) => set(k, e.target.value)
@@ -71,15 +72,35 @@ export default function AddPlant() {
       })
       existingPhotoPaths.forEach(p => fd.append('existing_photos', p))
       const res = await api.post('/plants', fd)
-      toast.success(`${form.common_name} added! 🌿`)
-      navigate(`/plants/${res.data.plant.id}`)
+      const plantId = res.data.plant.id
+
+      // Run health check if requested and photos are available
+      if (includeHealthCheck && photos.length > 0) {
+        setSaving(false)
+        setStep('health_checking')
+        try {
+          const hcFd = new FormData()
+          hcFd.append('photo', photos[0])
+          await api.post(`/plants/${plantId}/health-check`, hcFd)
+          toast.success(`${form.common_name} added with health report! 🩺`)
+          navigate(`/plants/${plantId}?tab=health`)
+        } catch {
+          // Health check failed — navigate anyway without results
+          toast.success(`${form.common_name} added! 🌿`)
+          navigate(`/plants/${plantId}`)
+        }
+      } else {
+        toast.success(`${form.common_name} added! 🌿`)
+        navigate(`/plants/${plantId}`)
+      }
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to save plant')
-    } finally { setSaving(false) }
+      setSaving(false)
+    }
   }
 
   const stepLabels = ['Upload', 'Review', 'Save']
-  const stepIndex = { upload: 0, identifying: 0, review: 1 }[step] ?? 0
+  const stepIndex = { upload: 0, identifying: 0, review: 1, health_checking: 2 }[step] ?? 0
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
@@ -93,6 +114,7 @@ export default function AddPlant() {
             {step === 'upload' && 'Upload a photo to identify your plant'}
             {step === 'identifying' && 'Analysing your plant…'}
             {step === 'review' && (identification ? 'Review & confirm identification' : 'Enter plant details')}
+            {step === 'health_checking' && 'Running health check…'}
           </p>
         </div>
       </div>
@@ -120,6 +142,20 @@ export default function AddPlant() {
             </button>
             <button onClick={skipIdentify} className="btn-ghost py-3 px-5">Skip</button>
           </div>
+        </div>
+      )}
+
+      {/* Health checking step */}
+      {step === 'health_checking' && (
+        <div className="card text-center py-16 space-y-4">
+          <div className="relative w-20 h-20 mx-auto">
+            <div className="absolute inset-0 rounded-full border-2 border-volt/20 animate-spin border-t-volt" />
+            <div className="absolute inset-4 flex items-center justify-center text-3xl animate-pulse-gentle">🩺</div>
+          </div>
+          <h3 className="font-display text-2xl font-bold text-white">Checking plant health</h3>
+          <p className="text-white/30 text-sm font-sans max-w-xs mx-auto">
+            Claude is assessing your plant's condition and looking for any issues…
+          </p>
         </div>
       )}
 
@@ -227,11 +263,41 @@ export default function AddPlant() {
             </Field>
           </div>
 
+          {/* Health check toggle — only shown if photos were uploaded */}
+          {photos.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIncludeHealthCheck(v => !v)}
+              className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left
+                ${includeHealthCheck
+                  ? 'border-volt/40 bg-volt/[0.06]'
+                  : 'border-white/[0.08] bg-white/[0.02] hover:border-white/20'}`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition-colors ${includeHealthCheck ? 'bg-volt/20' : 'bg-white/5'}`}>
+                🩺
+              </div>
+              <div className="flex-1">
+                <p className={`text-sm font-bold font-sans transition-colors ${includeHealthCheck ? 'text-volt' : 'text-white/70'}`}>
+                  Run an initial health check
+                </p>
+                <p className="text-xs text-white/30 font-sans mt-0.5">
+                  Claude will assess your plant's condition and flag any issues
+                </p>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${includeHealthCheck ? 'bg-volt border-volt' : 'border-white/20'}`}>
+                {includeHealthCheck && <Check size={11} className="text-[#070A07]" strokeWidth={3} />}
+              </div>
+            </button>
+          )}
+
           <div className="flex gap-3">
             <button onClick={() => setStep('upload')} className="btn-ghost py-3 px-5">← Back</button>
             <button onClick={handleSave} disabled={saving || !form.common_name?.trim()}
               className="btn-primary flex-1 flex items-center justify-center gap-2 py-3">
-              {saving ? 'Saving…' : <><Check size={15} /> Save to collection</>}
+              {saving ? 'Saving…' : includeHealthCheck
+                ? <><Activity size={15} /> Save &amp; check health</>
+                : <><Check size={15} /> Save to collection</>
+              }
             </button>
           </div>
         </div>
