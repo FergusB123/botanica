@@ -16,11 +16,23 @@ function parseJSON(text) {
   return JSON.parse(match[0]);
 }
 
+// Claude only accepts image/jpeg, image/png, image/gif, image/webp
+function normalizeMediaType(mimetype) {
+  if (!mimetype) return 'image/jpeg';
+  const m = mimetype.toLowerCase();
+  if (m === 'image/jpg' || m === 'image/pjpeg') return 'image/jpeg';
+  if (m === 'image/jpeg') return 'image/jpeg';
+  if (m === 'image/png')  return 'image/png';
+  if (m === 'image/gif')  return 'image/gif';
+  if (m === 'image/webp') return 'image/webp';
+  return 'image/jpeg'; // safe fallback for any other image type
+}
+
 // imageData: array of { buffer: Buffer, mimetype: string }
 async function identifyPlant(imageData) {
   const imageBlocks = imageData.map(({ buffer, mimetype }) => ({
     type: 'image',
-    source: { type: 'base64', media_type: mimetype, data: buffer.toString('base64') }
+    source: { type: 'base64', media_type: normalizeMediaType(mimetype), data: buffer.toString('base64') }
   }));
 
   const response = await getClient().messages.create({
