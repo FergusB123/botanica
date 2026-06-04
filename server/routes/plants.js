@@ -32,16 +32,33 @@ router.get('/', auth, async (req, res) => {
 // POST /api/plants/identify
 router.post('/identify', auth, upload.array('photos', 5), async (req, res) => {
   if (!req.files?.length) return res.status(400).json({ error: 'At least one photo is required' });
+
+  // Step 1: AI identification — fail hard if this errors
+  let identification;
   try {
     const imageData = req.files.map(f => ({ buffer: f.buffer, mimetype: f.mimetype }));
-    const identification = await claude.identifyPlant(imageData);
-    // Upload to Blob immediately so we have a real URL for the review step and save step
-    const photos = await Promise.all(req.files.map(f => uploadFile(f.buffer, f.originalname, f.mimetype)));
-    res.json({ identification, photos });
+    identification = await claude.identifyPlant(imageData);
   } catch (err) {
-    console.error('Identify error:', err.message);
-    res.status(500).json({ error: 'Plant identification failed. Check your API key and try again.' });
+    console.error('Claude identify error:', err.message);
+    const isKeyError = err.message?.includes('API key') || err.status === 401;
+    return res.status(500).json({
+      error: isKeyError
+        ? 'Invalid Anthropic API key. Check Settings → API Key.'
+        : `Plant identification failed: ${err.message}`
+    });
   }
+
+  // Step 2: Upload photos — fall back to base64 data URLs if storage fails
+  const photos = await Promise.all(req.files.map(async (f) => {
+    try {
+      return await uploadFile(f.buffer, f.originalname, f.mimetype);
+    } catch (uploadErr) {
+      console.warn('Photo upload failed, using base64 fallback:', uploadErr.message);
+      return `data:${f.mimetype};base64,${f.buffer.toString('base64')}`;
+    }
+  }));
+
+  res.json({ identification, photos });
 });
 
 // POST /api/plants
